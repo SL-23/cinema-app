@@ -3,7 +3,7 @@ version: 2.1
 jobs:
   build:
     docker:
-      - images: circleci/node:12.18.3
+      - image: circleci/node:12.18.3
       working_directory: ~/repo
       steps:
           - checkout
@@ -11,7 +11,7 @@ jobs:
             name: Show current branch
             command: echo ${CURRENT_BRANCH}
           - restore_cache:
-            key:
+            keys:
                 - app-{{checksum "package.json"}}
                 - app-
           - run:
@@ -23,7 +23,7 @@ jobs:
             key: app-{{checksum "package.json"}}
   deploy-to-aws-s3:
     docker:
-      - images: circleci/node:12.18.3
+      - image: circleci/node:12.18.3
       working_directory: ~/repo
       steps:
           - checkout
@@ -60,7 +60,7 @@ jobs:
               fi
   deploy-to-aws-s3:
     docker:
-      - images: circleci/node:12.18.3
+      - image: circleci/node:12.18.3
       working_directory: ~/repo
       steps:
           - checkout
@@ -97,28 +97,28 @@ jobs:
               then 
                 aws cloudfront create-invalidation-distrubution-id ${DEV_DISTRIBUTION_ID} --paths /\*
               fi
-  workflows:
-    build_and_deploy:
-      jobs:
-        - build
-        - deploy-to-aws-s3
-          requires:
-              - build
-          filters:
-            branches:
-                only: 
-                  - develop
-                  - staging
-                  - master
-      - deploy-to-aws-cloudfront
-          requires:
-              - deploy-to-aws-s3
-          filters:
-            branches:
-                only: 
-                  - develop
-                  - staging
-                  - master
+workflows:
+  build_and_deploy:
+    jobs:
+      - build
+      - deploy-to-aws-s3
+        requires:
+            - build
+        filters:
+          branches:
+              only: 
+                - develop
+                - staging
+                - master
+    - deploy-to-aws-cloudfront
+        requires:
+            - deploy-to-aws-s3
+        filters:
+          branches:
+              only: 
+                - develop
+                - staging
+                - master
 
 
 
