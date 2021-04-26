@@ -80,7 +80,7 @@ jobs:
               npm install
               npm run build
               cd
-              zip ../build.zip -r * .[^.]*
+              sudo zip ../build.zip -r * .[^.]*
               echo "build successful"
         - run:
             name: Deploy to AWS CloudFront
