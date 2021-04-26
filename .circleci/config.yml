@@ -4,27 +4,27 @@ jobs:
   build:
     docker:
       - image: circleci/node:12.18.3
-        working_directory: ~/repo
+    working_directory: ~/repo
     steps:
       - checkout
       - run:
           name: Show current branch
           command: echo ${CURRENT_BRANCH}
       - restore_cache:
-        keys:
-          - app-{{checksum "package.json"}}
-          - app-
+          keys:
+            - app-{{checksum "package.json"}}
+            - app-
       - run:
           name: install dependencies
           command: npm install
       - save_cache:
-        paths:
-          - node_modules
-        key: app-{{checksum "package.json"}}
+          paths:
+            - node_modules
+          key: app-{{checksum "package.json"}}
   deploy-to-aws-s3:
     docker:
       - image: circleci/node:12.18.3
-        working_directory: ~/repo
+    working_directory: ~/repo
     steps:
       - checkout
       - run:
@@ -61,7 +61,7 @@ jobs:
   deploy-to-aws-cloudfront:
     docker:
       - image: circleci/node:12.18.3
-        working_directory: ~/repo
+    working_directory: ~/repo
     steps:
         - checkout
         - run:
@@ -101,21 +101,21 @@ workflows:
   build_and_deploy:
     jobs:
       - build
-      - deploy-to-aws-s3:
-        requires:
-          - build
-        filters:
-          branches:
-            only:
-              - develop
-              - staging
-              - master
-      - deploy-to-aws-cloudfront:
-        requires: 
-          - deploy-to-aws-s3
-        filters:
-          branches:
-            only:
-              - develop
-              - staging
-              - master
+      - deploy-to-aws-s3: 
+          requires:
+            - build
+          filters:
+            branches:
+              only:
+                - develop
+                - staging
+                - master
+      - deploy-to-aws-cloudfront: 
+          requires: 
+            - deploy-to-aws-s3
+          filters:
+            branches:
+              only:
+                - develop
+                - staging
+                - master
