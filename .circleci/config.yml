@@ -87,12 +87,12 @@ jobs:
               aws configure set preview.cloudfront
               if ["${CURRENT_BRANCH}" == "main" ]
               then 
-                aws cloudfront create-invalidation --distribution-id ${PROD_DISTRIBUTION_ID} --paths /\*
+                aws cloudfront create-invalidation --distribution-id ${PROD_DISTRIBUTION_ID} --paths /* --region ap-southeast-2
               elif ["${CURRENT_BRANCH}" == "staging" ]
               then 
-                aws cloudfront create-invalidation --distribution-id ${STAGING_DISTRIBUTION_ID} --paths /\*
+                aws cloudfront create-invalidation --distribution-id ${STAGING_DISTRIBUTION_ID} --paths /* --region ap-southeast-2
               else
-                aws cloudfront create-invalidation --distribution-id ${DEV_DISTRIBUTION_ID} --paths /\*
+                aws cloudfront create-invalidation --distribution-id ${DEV_DISTRIBUTION_ID} --paths /* --region ap-southeast-2
               fi
 workflows:
   build_and_deploy:
