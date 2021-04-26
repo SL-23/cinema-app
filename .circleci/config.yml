@@ -50,12 +50,12 @@ jobs:
           command: |
             if ["${CURRENT_BRANCH}" == "main" ]
             then 
-              aws --region ${ASW_REGION} s3 sync ~/repo/build aws:s3//${AWS_PROD_BUCKET} --delete
+              aws --region ${AWS_REGION} s3 sync ~/repo/build aws:s3//${AWS_PROD_BUCKET} --delete
             elif ["${CURRENT_BRANCH}" == "staging" ]
             then 
-              aws --region ${ASW_REGION} s3 sync ~/repo/build aws:s3//${AWS_STAGING_BUCKET} --delete
+              aws --region ${AWS_REGION} s3 sync ~/repo/build aws:s3//${AWS_STAGING_BUCKET} --delete
             else
-              aws --region ${ASW_REGION} s3 sync ~/repo/build aws:s3//${AWS_DEV_BUCKET} --delete
+              aws --region ${AWS_REGION} s3 sync ~/repo/build aws:s3//${AWS_DEV_BUCKET} --delete
             fi
   deploy-to-aws-cloudfront:
     docker:
@@ -88,7 +88,6 @@ jobs:
               if ["${CURRENT_BRANCH}" == "main" ]
               then 
                 aws cloudfront create-invalidation-distrubution-id ${PROD_DISTRIBUTION_ID} --paths /\*
-
               elif ["${CURRENT_BRANCH}" == "staging" ]
               then 
                 aws cloudfront create-invalidation-distrubution-id ${STAGING_DISTRIBUTION_ID} --paths /\*
