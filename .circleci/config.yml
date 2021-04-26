@@ -48,7 +48,7 @@ jobs:
       - run:
           name: Deploy to AWS s3
           command: |
-            if ["${CURRENT_BRANCH}" == "master" ]
+            if ["${CURRENT_BRANCH}" == "main" ]
             then 
               aws --region ${ASW_REGION} s3 sync ~/repo/build aws:s3//${AWS_PROD_BUCKET} --delete
             elif ["${CURRENT_BRANCH}" == "staging" ]
@@ -86,7 +86,7 @@ jobs:
             name: Deploy to AWS CloudFront
             command: |
               aws configure set preview.cloudfront
-              if ["${CURRENT_BRANCH}" == "master" ]
+              if ["${CURRENT_BRANCH}" == "main" ]
               then 
                 aws cloudfront create-invalidation-distrubution-id ${PROD_DISTRIBUTION_ID} --paths /\*
 
