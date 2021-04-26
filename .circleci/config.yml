@@ -58,7 +58,7 @@ jobs:
             then 
               aws --region ${ASW_REGION} s3 sync ~/repo/build aws:s3//${AWS_DEV_BUCKET} --delete
             fi
-  deploy-to-aws-s3:
+  deploy-to-aws-cloudfront:
     docker:
       - image: circleci/node:12.18.3
         working_directory: ~/repo
