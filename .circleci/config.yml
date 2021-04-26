@@ -55,7 +55,6 @@ jobs:
             then 
               aws --region ${ASW_REGION} s3 sync ~/repo/build aws:s3//${AWS_STAGING_BUCKET} --delete
             else
-            then 
               aws --region ${ASW_REGION} s3 sync ~/repo/build aws:s3//${AWS_DEV_BUCKET} --delete
             fi
   deploy-to-aws-cloudfront:
@@ -94,7 +93,6 @@ jobs:
               then 
                 aws cloudfront create-invalidation-distrubution-id ${STAGING_DISTRIBUTION_ID} --paths /\*
               else
-              then 
                 aws cloudfront create-invalidation-distrubution-id ${DEV_DISTRIBUTION_ID} --paths /\*
               fi
 workflows:
