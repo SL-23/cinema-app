@@ -90,9 +90,9 @@ jobs:
                 aws cloudfront create-invalidation --distribution-id ${PROD_DISTRIBUTION_ID} --paths "./*"
               elif ["${CURRENT_BRANCH}" == "staging" ]
               then 
-                aws cloudfront create-invalidation --distribution-id ${STAGING_DISTRIBUTION_ID} --paths /\*
+                aws cloudfront create-invalidation --distribution-id ${STAGING_DISTRIBUTION_ID} --paths "./*"
               else
-                aws cloudfront create-invalidation --distribution-id ${DEV_DISTRIBUTION_ID} --paths /\*
+                aws cloudfront create-invalidation --distribution-id ${DEV_DISTRIBUTION_ID} --paths "./*"
               fi
 workflows:
   build_and_deploy:
