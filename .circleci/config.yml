@@ -85,15 +85,6 @@ jobs:
             name: Deploy to AWS CloudFront
             command: |
               aws configure set preview.cloudfront
-              if [ "${CURRENT_BRANCH}" == "main" ]
-              then 
-                aws cloudfront create-invalidation --distribution-id E4AQBTBBNOH4L --paths "~/repo/*"
-              elif [ "${CURRENT_BRANCH}" == "staging" ]
-              then 
-                aws cloudfront create-invalidation --distribution-id E1J93CVZMROJES --paths "~/repo/*"
-              else
-                aws cloudfront create-invalidation --distribution-id EGWX9IA9EY4DZ --paths "~/repo/*"
-              fi
 workflows:
   build_and_deploy:
     jobs:
