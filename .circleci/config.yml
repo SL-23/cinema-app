@@ -87,11 +87,14 @@ jobs:
               aws configure set preview.cloudfront
               if ["${CURRENT_BRANCH}" == "main" ]
               then 
+                echo "-1"
                 aws cloudfront create-invalidation --distribution-id E4AQBTBBNOH4L --paths "/*"
               elif ["${CURRENT_BRANCH}" == "staging" ]
               then 
+                echo "-2"
                 aws cloudfront create-invalidation --distribution-id E1J93CVZMROJES --paths "/*"
               else
+                echo "-3"
                 aws cloudfront create-invalidation --distribution-id EGWX9IA9EY4DZ --paths "/*"
               fi
 workflows:
