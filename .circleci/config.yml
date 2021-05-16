@@ -1,50 +1,66 @@
 version: 2.1
 
+executors:
+  app-executor:
+    docker:
+        - image: circleci/node:12.18.3
+    working_directory: ~/repo
+
+aliases:
+  - &show-current-branch-name
+    run:
+      name: Show current branch
+      command: echo ${CIRCLE_BRANCH}
+  - &restore-cache
+    restore_cache:
+      keys:
+        - app-{{checksum "package.json"}}
+        - app-
+  - &install-dependencies
+    run:
+      name: install dependencies
+      command: npm install
+  - &save-cache
+    save_cache:
+      paths:
+        - node_modules
+      key: app-{{checksum "package.json"}}
+  - &install-aws-cli
+    run:
+      name: Installing AWS circleci
+      working_directory: /
+      command: |
+        sudo apt-get -y -qq update
+        sudo apt-get install -y awscli
+        sudo apt-get install -y python-pip python-dev build-essential
+  - &build-project
+    run:
+      name: Build project
+      command: |
+        npm install
+        npm run build
+        cd
+        sudo zip ../build.zip -r * .[^.]*
+        echo "build successful"
+
+
 jobs:
   build:
-    docker:
-      - image: circleci/node:12.18.3
-    working_directory: ~/repo
+    executor: app-executor
     steps:
       - checkout
-      - run:
-          name: Show current branch
-          command: echo ${CIRCLE_BRANCH}
-      - restore_cache:
-          keys:
-            - app-{{checksum "package.json"}}
-            - app-
-      - run:
-          name: install dependencies
-          command: npm install
-      - save_cache:
-          paths:
-            - node_modules
-          key: app-{{checksum "package.json"}}
+      - *show-current-branch-name
+      - *restore_cache
+      - *install-dependencies
+      - *save-cache
+      
   deploy-to-aws-s3:
-    docker:
-      - image: circleci/node:12.18.3
-    working_directory: ~/repo
+    executor: app-executor
     steps:
       - checkout
-      - run:
-          name: Show current branch
-          command: echo ${CIRCLE_BRANCH}
-      - run:
-          name: Installing AWS circleci
-          working_directory: /
-          command: |
-            sudo apt-get -y -qq update
-            sudo apt-get install -y awscli
-            sudo apt-get install -y python-pip python-dev build-essential
-      - run:
-          name: Build project
-          command: |
-            npm install
-            npm run build
-            cd
-            sudo zip ../build.zip -r * .[^.]*
-            echo "build successful"
+      - *show-current-branch-name
+      - *install-aws-cli
+      - *build-project
       - run:
           name: Deploy to AWS s3
           command: |
@@ -58,29 +74,12 @@ jobs:
               aws --region ${AWS_REGION} s3 sync ~/repo/build s3://${AWS_DEV_BUCKET} --delete
             fi
   deploy-to-aws-cloudfront:
-    docker:
-      - image: circleci/node:12.18.3
-    working_directory: ~/repo
+    executor: app-executor
     steps:
         - checkout
-        - run:
-            name: Show current branch
-            command: echo ${CIRCLE_BRANCH}
-        - run:
-            name: Installing AWS circleci
-            working_directory: /
-            command: |
-              sudo apt-get -y -qq update
-              sudo apt-get install -y awscli
-              sudo apt-get install -y python-pip python-dev build-essential
-        - run:
-            name: Build project
-            command: |
-              npm install
-              npm run build
-              cd
-              sudo zip ../build.zip -r * .[^.]*
-              echo "build successful"
+        - *show-current-branch-name
+        - *install-aws-cli
+        - *build-project
         - run:
             name: Deploy to AWS CloudFront
             command: |
