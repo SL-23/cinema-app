@@ -50,7 +50,7 @@ jobs:
     steps:
       - checkout
       - *show-current-branch-name
-      - *restore_cache
+      - *restore-cache
       - *install-dependencies
       - *save-cache
       
