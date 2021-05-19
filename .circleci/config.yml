@@ -168,7 +168,7 @@ jobs:
                     ]
                   },
                   {
-                    "action": "header",
+                    "type": "action",
                     "elements": 
                     [
                         {
@@ -182,7 +182,7 @@ jobs:
                           "url": "$CIRCLE_BUILD_URL"
                         }
                     ]
-                  },
+                  }
                 ]
               }
 
