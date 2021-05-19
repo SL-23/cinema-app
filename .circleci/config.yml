@@ -126,65 +126,10 @@ jobs:
           channel: 'cinema-circleci'
           template: basic_fail_1
       - slack/notify:
-          event: always
+          event: pass
           channel: 'cinema-circleci'
-          template: ''
-          custom: |
-              {
-                "blocks": 
-                [
-                  {
-                    "type": "header",
-                    "text": 
-                    {
-                      "type": "plain_text"
-                      "text": "${CIRCLE_BRANCH} branch deployment to aws s3 and cloudfront is completed. 👍"
-                    }
-                  },
-                  {
-                    "type": "section",
-                    "fields": 
-                    [
-                      {
-                        "type": "mrkdwn",
-                        "text": "*Project*: \n $CIRCLE_PROJECT_REPONAME",
-                        "emoji": true
-                      },
-                      {
-                        "type": "mrkdwn",
-                        "text": "*Branch*: \n $CIRCLE_BRANCH",
-                        "emoji": true
-                      },
-                      {
-                        "type": "mrkdwn",
-                        "text": "*When*: \n$(date +'%m/%d/%Y %T')",
-                        "emoji": true
-                      },
-                      {
-                        "type": "mrkdwn",
-                        "text": "*Author*: \n$CIRCLE_PROJECT_USERNAME",
-                        "emoji": true
-                      }
-                    ]
-                  },
-                  {
-                    "action": "header",
-                    "elements": 
-                    [
-                        {
-                          "type": "button",
-                          "text": 
-                          {
-                            "type": "plain_text",
-                            "text": "View job",
-                            "emoji": true
-                          },
-                          "url": "$CIRCLE_BUILD_URL"
-                        }
-                    ]
-                  },
-                ]
-              }
+          template: success_tagged_deploy_1
+          
 
 workflows:
   build_and_deploy:
