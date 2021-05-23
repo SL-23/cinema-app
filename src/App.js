@@ -5,9 +5,8 @@ import store from './redux/store';
 
 const App = () => {
   return (
-
     <Provider store={store}>
-      <div className='app'>
+      <div className="app">
         <h1>reudx</h1>
       </div>
     </Provider>
