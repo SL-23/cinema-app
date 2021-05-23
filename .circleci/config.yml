@@ -167,8 +167,8 @@ jobs:
       - run:
           name: Deploy to AWS CloudFront
           command: |
-            $CLOUDFRONT_DISTRIBUTION_ID=$(cat artifacts/cloudfront_bucket_name.txt | sed 's/\"//g')
-            echo CLOUDFRONT_DISTRIBUTION_ID
+            CLOUDFRONT_DISTRIBUTION_ID=$(cat artifacts/cloudfront_bucket_name.txt | sed 's/\"//g')
+            echo $CLOUDFRONT_DISTRIBUTION_ID
             aws configure set preview.cloudfront true
             if [ "${CIRCLE_BRANCH}" == "main" ]
             then 
