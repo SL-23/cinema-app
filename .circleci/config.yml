@@ -5,12 +5,15 @@ version: 2.1
 executors:
   app-executor:
     docker:
-        - image: circleci/node:12.18.3
+        - image: circleci/node:15.5.0
     working_directory: ~/repo
   slack-executor:
     docker:
         - image: 'cibuilds/base:latest'
     resource_class: small
+  terraform-executor:
+    docker:
+        - image: hashicorp/terraform:latest
 
 aliases:
   - &show-current-branch-name
@@ -25,7 +28,9 @@ aliases:
   - &install-dependencies
     run:
       name: install dependencies
-      command: npm install
+      command: |
+        npm install
+        mkdir -p artifacts
   - &save-cache
     save_cache:
       paths:
@@ -59,6 +64,13 @@ jobs:
       - *restore-cache
       - *install-dependencies
       - *save-cache
+      - run:
+          name: copy infrastructure folder
+          command: cp -r infrastructure artifacts/infrastructure
+      - persist_to_workspace:
+          root: ./
+          path:
+            - artifacts
   linting:
     executor: app-executor
     steps:
@@ -77,46 +89,97 @@ jobs:
       - run:
           name: Run prettier
           command: npm run prettier:check
+
+  terraform-validate:
+    executor: terraform-executor
+    steps:
+      - checkout
+      - *show-current-branch-name
+      - run:
+          name: terraform validate & format
+          command: |
+            cd infrastructure/
+            terraform init -backend=false
+            terraform validate
+            terraform fmt -check
+
+  terraform-plan-and-apply:
+    executor: terraform-executor
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ./
+      - *show-current-branch-name
+      - run:
+          name: terraform plan
+          command: |
+            cd artifacts/infrastructure/
+            terraform init
+            terraform workspace select ${CIRCLE_BRANCH} || terraform workspace new ${CIRCLE_BRANCH}
+            terraform plan
+      - run:
+          name: terraform apply
+          command: |
+            cd artifacts/infrastructure/
+            terraform init
+            terraform workspace select ${CIRCLE_BRANCH}
+            terraform apply --auto-approve
+            terraform output cinema_bucket_name > ../cinema_bucket_name.txt
+            terraform output cloudfront_bucket_name > ../cloudfront_bucket_name.txt
+      - persist_to_workspace:
+          root: ./
+          path:
+            - artifacts
       
   deploy-to-aws-s3:
     executor: app-executor
     steps:
       - checkout
+      - attach_workspace:
+          at: ./
       - *show-current-branch-name
       - *install-aws-cli
       - *build-project
       - run:
           name: Deploy to AWS s3
           command: |
+            AWS_BUCKET_NAME=$(cat artifacts/cinema_bucket_name.txt | sed 's/\"//g')
+            echo $AWS_BUCKET_NAME
             if [ "${CIRCLE_BRANCH}" == "main" ]
             then 
-              aws --region ${AWS_REGION} s3 sync ~/repo/build s3://${AWS_PROD_BUCKET} --delete
+              aws --region ${AWS_REGION} s3 sync ~/repo/build s3://${AWS_BUCKET_NAME} --delete
             elif [ "${CIRCLE_BRANCH}" == "staging" ]
             then 
-              aws --region ${AWS_REGION} s3 sync ~/repo/build s3://${AWS_STAGING_BUCKET} --delete
+              aws --region ${AWS_REGION} s3 sync ~/repo/build s3://${AWS_BUCKET_NAME} --delete
             else
-              aws --region ${AWS_REGION} s3 sync ~/repo/build s3://${AWS_DEV_BUCKET} --delete
+              aws --region ${AWS_REGION} s3 sync ~/repo/build s3://${AWS_BUCKET_NAME} --delete
             fi
+
   deploy-to-aws-cloudfront:
     executor: app-executor
     steps:
-        - checkout
-        - *show-current-branch-name
-        - *install-aws-cli
-        - *build-project
-        - run:
-            name: Deploy to AWS CloudFront
-            command: |
-              aws configure set preview.cloudfront true
-              if [ "${CIRCLE_BRANCH}" == "main" ]
-              then 
-                aws cloudfront create-invalidation --distribution-id ${PROD_DISTRIBUTION_ID} --paths "/*"
-              elif [ "${CIRCLE_BRANCH}" == "staging" ]
-              then 
-                aws cloudfront create-invalidation --distribution-id ${STAGING_DISTRIBUTION_ID} --paths "/*"
-              else
-                aws cloudfront create-invalidation --distribution-id ${DEV_DISTRIBUTION_ID} --paths "/*"
-              fi
+      - checkout
+      - attach_workspace:
+        at: ./
+      - *show-current-branch-name
+      - *install-aws-cli
+      - *build-project
+      - run:
+          name: Deploy to AWS CloudFront
+          command: |
+            $CLOUDFRONT_DISTRIBUTION_ID=$(cat artifacts/cloudfront_bucket_name.txt | sed 's/\"//g')
+            echo CLOUDFRONT_DISTRIBUTION_ID
+            aws configure set preview.cloudfront true
+            if [ "${CIRCLE_BRANCH}" == "main" ]
+            then 
+              aws cloudfront create-invalidation --distribution-id ${CLOUDFRONT_DISTRIBUTION_ID} --paths "/*"
+            elif [ "${CIRCLE_BRANCH}" == "staging" ]
+            then 
+              aws cloudfront create-invalidation --distribution-id ${CLOUDFRONT_DISTRIBUTION_ID} --paths "/*"
+            else
+              aws cloudfront create-invalidation --distribution-id ${CLOUDFRONT_DISTRIBUTION_ID} --paths "/*"
+            fi
+
   notify-via-slack:
     executor: slack-executor
     steps:
@@ -129,7 +192,19 @@ jobs:
           event: pass
           channel: 'cinema-circleci'
           template: success_tagged_deploy_1
-          
+
+  terraform-destroy:
+    executor: terraform-executor
+    steps:
+      - checkout
+      - *show-current-branch-name
+      - run:
+          name: terraform destroy
+          command: |
+            cd infrastructure/
+            terraform init
+            terraform workspace select ${CIRCLE_BRANCH} || terraform workspace new ${CIRCLE_BRANCH}
+            terraform destroy --auto-approve
 
 workflows:
   build_and_deploy:
@@ -153,9 +228,28 @@ workflows:
                 - develop
                 - staging
                 - main
+      - terraform-validate:
+          requires: 
+            - linting
+          filters:
+            branches:
+              only:
+                - develop
+                - staging
+                - main
+      - terraform-plan-and-apply:
+          requires: 
+            - terraform-validate
+          filters:
+            branches:
+              only:
+                - develop
+                - staging
+                - main
+
       - deploy-to-aws-s3: 
           requires:
-            - prettier
+            - terraform-plan-and-apply
           filters:
             branches:
               only:
@@ -175,6 +269,19 @@ workflows:
           requires: 
             - deploy-to-aws-cloudfront
           filters:
+            branches:
+              only:
+                - develop
+                - staging
+                - main
+     - hold:
+        type: approval
+        requires: 
+          - deploy-to-aws-cloudfront
+    - terraform-destroy:
+        requires:
+          - hold
+        filters:
             branches:
               only:
                 - develop
