@@ -69,7 +69,7 @@ jobs:
           command: cp -r infrastructure artifacts/infrastructure
       - persist_to_workspace:
           root: ./
-          path:
+          paths:
             - artifacts
   linting:
     executor: app-executor
@@ -128,7 +128,7 @@ jobs:
             terraform output cloudfront_bucket_name > ../cloudfront_bucket_name.txt
       - persist_to_workspace:
           root: ./
-          path:
+          paths:
             - artifacts
       
   deploy-to-aws-s3:
@@ -160,7 +160,7 @@ jobs:
     steps:
       - checkout
       - attach_workspace:
-        at: ./
+          at: ./
       - *show-current-branch-name
       - *install-aws-cli
       - *build-project
@@ -274,16 +274,16 @@ workflows:
                 - develop
                 - staging
                 - main
-     - hold:
-        type: approval
-        requires: 
-          - deploy-to-aws-cloudfront
-    - terraform-destroy:
-        requires:
-          - hold
-        filters:
-            branches:
-              only:
-                - develop
-                - staging
-                - main
+      - hold:
+          type: approval
+          requires: 
+            - deploy-to-aws-cloudfront
+      - terraform-destroy:
+            requires:
+              - hold
+            filters:
+                branches:
+                  only:
+                    - develop
+                    - staging
+                    - main
